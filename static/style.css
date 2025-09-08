@@ -1,0 +1,20 @@
+:root{
+  --bg:#05060a;
+  --card:#071022;
+  --accent:#06b6d4;
+  --muted:#9fb3bd;
+  --text:#e6f7ff;
+}
+body{ margin:0; font-family:Inter, "Segoe UI", Arial; background:var(--bg); color:var(--text); }
+.topbar{ display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.03); }
+.brand{ font-weight:700; font-size:20px; color:var(--accent); }
+.subtitle{ color:var(--muted); }
+.container{ max-width:1100px; margin:24px auto; padding:0 16px; }
+.card{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02)); border:1px solid rgba(255,255,255,0.03); padding:18px; border-radius:12px; margin-bottom:18px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+.row{ display:flex; gap:18px; align-items:flex-start; }
+.btn{ background:var(--accent); color:#022; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:600; }
+.btn.danger{ background:#ef4444; color:white; }
+.output{ background:#011b26; padding:12px; border-radius:8px; color:#cfe; overflow:auto; max-height:320px; white-space:pre-wrap; }
+input[type="file"]{ color:var(--text); }
+input, textarea{ padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:#061226; color:var(--text); }
+.muted{ color:var(--muted); font-size:13px; }
