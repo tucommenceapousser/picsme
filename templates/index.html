@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>SelfPhotoFinder — trhacknon</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">SelfPhotoFinder</div>
+    <div class="subtitle">Prototype éthique — dev: <strong>trhacknon</strong></div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>1 — Upload ou capture</h2>
+      <div class="row">
+        <div>
+          <video id="video" width="320" height="240" autoplay></video>
+          <div><button id="snap" class="btn">Prendre une photo</button></div>
+        </div>
+        <div>
+          <input type="file" id="fileInput" accept="image/*">
+          <div>
+            <label><input type="checkbox" id="consent"> Je consens à l'analyse de **ma** photo (démo pédagogique)</label>
+          </div>
+          <pre id="uploadResult" class="output"></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2 — Vérifier & analyser</h2>
+      <div>
+        <input id="filename" placeholder="Entrez le filename (retourné après upload)">
+        <label><input type="checkbox" id="useBing" checked> Utiliser Bing Visual Search (recommandé)</label>
+        <button id="analyseBtn" class="btn">Analyser & Rechercher</button>
+      </div>
+      <pre id="analyseResult" class="output"></pre>
+    </section>
+
+    <section class="card">
+      <h2>3 — Actions</h2>
+      <div class="row">
+        <div>
+          <button id="deleteBtn" class="btn danger">Supprimer toutes mes données</button>
+        </div>
+        <div>
+          <small class="muted">Note: l'outil n'effectue **pas** d'identification faciale. Il cherche uniquement des occurrences publiques.</small>
+        </div>
+      </div>
+      <pre id="actionResult" class="output"></pre>
+    </section>
+  </main>
+
+<script>
+const video = document.getElementById('video');
+const snapBtn = document.getElementById('snap');
+const fileInput = document.getElementById('fileInput');
+const consentBox = document.getElementById('consent');
+const uploadResult = document.getElementById('uploadResult');
+const analyseResult = document.getElementById('analyseResult');
+const actionResult = document.getElementById('actionResult');
+
+navigator.mediaDevices.getUserMedia({video:true})
+  .then(stream => video.srcObject = stream)
+  .catch(err => console.warn("camera not available", err));
+
+snapBtn.onclick = async () => {
+  if (!consentBox.checked) { alert("Consentement requis"); return; }
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 320;
+  canvas.height = video.videoHeight || 240;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  const blob = await new Promise(res=>canvas.toBlob(res,"image/jpeg"));
+  const form = new FormData();
+  form.append("photo", blob, "capture.jpg");
+  form.append("consent", "yes");
+  const r = await fetch("/upload_photo", {method:"POST", body: form});
+  const j = await r.json();
+  uploadResult.innerText = JSON.stringify(j, null, 2);
+  if (j.filename) document.getElementById('filename').value = j.filename;
+};
+
+fileInput.onchange = async (e) => {
+  if (!consentBox.checked) { alert("Consentement requis"); return; }
+  const f = e.target.files[0];
+  if (!f) return;
+  const form = new FormData();
+  form.append("photo", f);
+  form.append("consent", "yes");
+  const r = await fetch("/upload_photo", {method:"POST", body: form});
+  const j = await r.json();
+  uploadResult.innerText = JSON.stringify(j, null, 2);
+  if (j.filename) document.getElementById('filename').value = j.filename;
+};
+
+document.getElementById('analyseBtn').onclick = async () => {
+  if (!consentBox.checked) { alert("Consentement requis"); return; }
+  const filename = document.getElementById('filename').value.trim();
+  if (!filename) { alert("Renseigne le filename retourné après upload"); return; }
+  const useBing = document.getElementById('useBing').checked;
+  analyseResult.innerText = "Recherche en cours…";
+  const r = await fetch("/describe_and_search", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({consent:true, filename: filename, use_bing: useBing})
+  });
+  const j = await r.json();
+  analyseResult.innerText = JSON.stringify(j, null, 2);
+
+  // if search_links present, display clickable links
+  if (j.search_links) {
+    let links = "";
+    for (const [k,v] of Object.entries(j.search_links)) {
+      links += `${k}: ${v}\n`;
+    }
+    analyseResult.innerText += "\n\nLiens de recherche (ouvrir manuellement si nécessaire):\n" + links;
+  }
+};
+
+document.getElementById('deleteBtn').onclick = async () => {
+  if (!confirm("Supprimer toutes les données (uploads & logs) ?")) return;
+  const r = await fetch("/delete_data", {method:"POST"});
+  const j = await r.json();
+  actionResult.innerText = JSON.stringify(j, null, 2);
+};
+</script>
+</body>
+</html>
